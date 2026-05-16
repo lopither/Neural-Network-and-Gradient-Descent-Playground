@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Neural Network and Gradient Descent Playground</title>
+    <link rel="stylesheet" href="./styles.css?v=20260516-ui-polish">
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "./node_modules/three/build/three.module.js",
+          "three/addons/": "./node_modules/three/examples/jsm/"
+        }
+      }
+    </script>
+    <script type="module" src="./app.js?v=20260516-ui-polish"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Interactive ML Lab</p>
+          <h1>Neural Network Playground + Gradient Descent Visualizer</h1>
+        </div>
+        <div class="topbar-stats" aria-label="App status">
+          <span id="networkStatus">network idle</span>
+          <span id="optimizerStatus">optimizer idle</span>
+        </div>
+        <div class="topbar-actions" aria-label="Experiment import and export">
+          <button type="button" id="exportExperimentButton">Export JSON</button>
+          <label class="file-button">
+            Import JSON
+            <input id="importExperimentInput" type="file" accept="application/json">
+          </label>
+        </div>
+      </header>
+
+      <main class="split-app">
+        <section class="workspace" aria-labelledby="classifierTitle">
+          <div class="workspace-header">
+            <div>
+              <p class="part-number">Part 1</p>
+              <h2 id="classifierTitle">Neural Network Playground 2D Classifier</h2>
+            </div>
+            <div class="metric-strip" aria-label="Classifier metrics">
+              <span>Epoch <strong id="epochValue">0</strong></span>
+              <span>Train loss <strong id="lossValue">0.000</strong></span>
+              <span>Val loss <strong id="validationLossValue">0.000</strong></span>
+              <span>Train acc <strong id="accuracyValue">0%</strong></span>
+              <span>Val acc <strong id="validationAccuracyValue">0%</strong></span>
+            </div>
+          </div>
+
+          <div class="tool-grid classifier-grid">
+            <form class="control-panel" id="classifierControls">
+              <fieldset>
+                <legend>Dataset</legend>
+                <label>
+                  Shape
+                  <select id="datasetSelect">
+                    <option value="circles">Circles</option>
+                    <option value="moons">Moons</option>
+                    <option value="spirals">Spirals</option>
+                    <option value="xor">XOR</option>
+                    <option value="gaussian">Gaussian clusters</option>
+                  </select>
+                </label>
+                <label>
+                  Points
+                  <input id="pointCountInput" type="number" min="40" max="800" step="20" value="240">
+                </label>
+                <label>
+                  Noise
+                  <input id="noiseInput" type="range" min="0" max="0.35" step="0.01" value="0.08">
+                </label>
+                <div class="button-row">
+                  <button type="button" id="generateDatasetButton">Generate</button>
+                  <button type="button" id="clearDatasetButton">Clear</button>
+                </div>
+              </fieldset>
+
+              <fieldset>
+                <legend>Architecture</legend>
+                <label>
+                  Hidden units
+                  <input id="hiddenUnitsInput" type="number" min="2" max="32" step="1" value="8">
+                </label>
+                <label>
+                  Depth
+                  <input id="depthInput" type="number" min="1" max="3" step="1" value="2">
+                </label>
+                <label>
+                  Activation
+                  <select id="activationSelect">
+                    <option value="tanh">tanh</option>
+                    <option value="relu">ReLU</option>
+                    <option value="sigmoid">sigmoid</option>
+                  </select>
+                </label>
+                <label>
+                  Optimizer
+                  <select id="networkOptimizerSelect">
+                    <option value="adam">Adam</option>
+                    <option value="sgd">SGD</option>
+                  </select>
+                </label>
+              </fieldset>
+
+              <fieldset>
+                <legend>Training</legend>
+                <label>
+                  Learning rate
+                  <input id="networkLrInput" type="range" min="0.005" max="0.3" step="0.005" value="0.04">
+                </label>
+                <label>
+                  L2 regularization
+                  <input id="l2Input" type="range" min="0" max="0.08" step="0.002" value="0.004">
+                </label>
+                <label>
+                  Steps per frame
+                  <input id="networkSpeedInput" type="number" min="1" max="25" step="1" value="5">
+                </label>
+                <label>
+                  Stop after epochs
+                  <input id="maxEpochInput" type="number" min="1" max="100000" step="10" value="600">
+                </label>
+                <div class="segmented" role="group" aria-label="Drawing class">
+                  <button type="button" class="active" data-draw-class="1">Class A</button>
+                  <button type="button" data-draw-class="0">Class B</button>
+                </div>
+                <div class="button-row triple">
+                  <button type="button" id="trainNetworkButton" class="primary">Train</button>
+                  <button type="button" id="stepNetworkButton">Step</button>
+                  <button type="button" id="resetNetworkButton">Reset</button>
+                </div>
+              </fieldset>
+            </form>
+
+            <div class="canvas-panel">
+              <canvas id="classifierCanvas" width="720" height="520" aria-label="2D classifier canvas"></canvas>
+              <div class="legend-row" aria-label="Classifier legend">
+                <span><i class="dot class-a"></i> Class A</span>
+                <span><i class="dot class-b"></i> Class B</span>
+                <span><i class="swatch decision-a"></i> Predicted A</span>
+                <span><i class="swatch decision-b"></i> Predicted B</span>
+              </div>
+              <div class="learning-panel">
+                <label class="timeline-control">
+                  Training timeline <span class="value-readout" id="networkTimelineValue">Live</span>
+                  <input id="networkTimelineInput" type="range" min="0" max="0" step="1" value="0">
+                </label>
+                <div class="chart-grid" aria-label="Training charts">
+                  <canvas id="lossChartCanvas" width="360" height="150" aria-label="Loss chart"></canvas>
+                  <canvas id="accuracyChartCanvas" width="360" height="150" aria-label="Accuracy chart"></canvas>
+                </div>
+                <div class="analysis-panel classifier-analysis" id="classifierAnalysis" aria-live="polite"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="workspace" aria-labelledby="optimizerTitle">
+          <div class="workspace-header">
+            <div>
+              <p class="part-number">Part 2</p>
+              <h2 id="optimizerTitle">Gradient Descent Visualizer</h2>
+            </div>
+            <div class="metric-strip optimizer-metrics" aria-label="Optimizer metrics" id="optimizerMetrics"></div>
+          </div>
+
+          <div class="tool-grid optimizer-grid">
+            <form class="control-panel" id="optimizerControls">
+              <fieldset>
+                <legend>Surface</legend>
+                <label>
+                  Function
+                  <select id="functionSelect">
+                    <option value="quadratic">x^2 + y^2</option>
+                    <option value="rosenbrock">Rosenbrock function</option>
+                    <option value="himmelblau">Himmelblau function</option>
+                    <option value="custom">Custom function</option>
+                  </select>
+                </label>
+                <div class="custom-function-panel" id="customFunctionPanel" hidden>
+                  <label>
+                    f(x, y)
+                    <input id="customFunctionInput" type="text" value="sin(x) * cos(y) + 0.12 * (x^2 + y^2)" placeholder="x^2 + y^2 + sin(x*y)">
+                  </label>
+                  <div class="mini-grid">
+                    <label>
+                      x min
+                      <input id="customXMinInput" type="number" step="0.5" value="-4">
+                    </label>
+                    <label>
+                      x max
+                      <input id="customXMaxInput" type="number" step="0.5" value="4">
+                    </label>
+                    <label>
+                      y min
+                      <input id="customYMinInput" type="number" step="0.5" value="-4">
+                    </label>
+                    <label>
+                      y max
+                      <input id="customYMaxInput" type="number" step="0.5" value="4">
+                    </label>
+                  </div>
+                  <label>
+                    Examples
+                    <select id="customExampleSelect">
+                      <option value="wavy">Wavy nonconvex bowl</option>
+                      <option value="saddle">Saddle with bowl</option>
+                      <option value="ripples">Rippled basin</option>
+                      <option value="beale">Beale-style valley</option>
+                    </select>
+                  </label>
+                  <div class="button-row">
+                    <button type="button" id="applyCustomFunctionButton">Apply function</button>
+                    <button type="button" id="useCustomExampleButton">Load example</button>
+                  </div>
+                  <p class="form-message" id="customFunctionMessage"></p>
+                </div>
+                <label>
+                  Start x
+                  <input id="startXInput" type="number" step="0.1" value="2.4">
+                </label>
+                <label>
+                  Start y
+                  <input id="startYInput" type="number" step="0.1" value="-1.8">
+                </label>
+                <div class="button-row">
+                  <button type="button" id="applyStartButton">Apply start</button>
+                  <button type="button" id="randomStartButton">Random</button>
+                </div>
+              </fieldset>
+
+              <fieldset>
+                <legend>Optimizers</legend>
+                <label class="check-row">
+                  <input type="checkbox" name="optimizer" value="gd" checked>
+                  Gradient descent
+                </label>
+                <label class="check-row">
+                  <input type="checkbox" name="optimizer" value="momentum" checked>
+                  Momentum
+                </label>
+                <label class="check-row">
+                  <input type="checkbox" name="optimizer" value="adam" checked>
+                  Adam
+                </label>
+                <label class="check-row">
+                  <input type="checkbox" name="optimizer" value="rmsprop">
+                  RMSprop
+                </label>
+              </fieldset>
+
+              <fieldset>
+                <legend>Run</legend>
+                <label>
+                  Learning rate
+                  <input id="optimizerLrInput" type="range" min="0.002" max="0.12" step="0.002" value="0.03">
+                </label>
+                <label>
+                  Schedule
+                  <select id="scheduleSelect">
+                    <option value="constant">constant</option>
+                    <option value="step">step decay</option>
+                    <option value="cosine">cosine decay</option>
+                    <option value="inverse">inverse sqrt</option>
+                  </select>
+                </label>
+                <label>
+                  Animation speed <span class="value-readout" id="optimizerSpeedValue">1x</span>
+                  <input id="optimizerSpeedInput" type="range" min="0.25" max="5" step="0.25" value="1">
+                </label>
+                <div class="button-row quad">
+                  <button type="button" id="runOptimizerButton" class="primary">Run</button>
+                  <button type="button" id="stepOptimizerButton">Step</button>
+                  <button type="button" id="replayOptimizerButton">Replay</button>
+                  <button type="button" id="resetOptimizerButton">Reset</button>
+                </div>
+              </fieldset>
+            </form>
+
+            <div class="canvas-panel">
+              <canvas id="optimizerCanvas" width="720" height="520" aria-label="3D gradient descent canvas"></canvas>
+              <div class="webgl-fallback" id="webglFallback" hidden>
+                3D rendering needs WebGL. Use a browser with WebGL enabled to view the surface and optimizer paths.
+              </div>
+              <div class="legend-row optimizer-legend" aria-label="Optimizer legend">
+                <span><i class="line gd"></i> Gradient descent</span>
+                <span><i class="line momentum"></i> Momentum</span>
+                <span><i class="line adam"></i> Adam</span>
+                <span><i class="line rmsprop"></i> RMSprop</span>
+                <span><i class="target-dot"></i> Minimum</span>
+                <span><i class="guide-line"></i> Distance to min</span>
+              </div>
+              <label class="timeline-control">
+                Optimizer timeline <span class="value-readout" id="optimizerTimelineValue">Live</span>
+                <input id="optimizerTimelineInput" type="range" min="0" max="0" step="1" value="0">
+              </label>
+              <div class="analysis-panel" id="optimizerAnalysis" aria-live="polite"></div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

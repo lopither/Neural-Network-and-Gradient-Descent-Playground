@@ -1,0 +1,11 @@
+{
+  "name": "neural-optimizer-playground",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "node tests/core.test.mjs"
+  },
+  "dependencies": {
+    "three": "^0.184.0"
+  }
+}
