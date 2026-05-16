@@ -178,25 +178,3 @@ For a normal GitHub repository, the recommended choice is to commit `package.jso
 ```text
 Interactive browser ML lab for visualizing 2D neural-network classification and 3D gradient-descent optimizer behavior.
 ```
-
-## Suggested Topics
-
-```text
-machine-learning
-neural-network
-gradient-descent
-optimization
-threejs
-javascript
-visualization
-education
-```
-
-## Roadmap
-
-- Add more optimizers such as Nesterov momentum and AdaGrad.
-- Add train/test split controls.
-- Add preset neural-network exercises.
-- Add downloadable PNG screenshots of runs.
-- Add GitHub Pages deployment support through CDN imports or a build pipeline.
-- Add a more formal test harness for browser UI smoke tests.
